@@ -19,29 +19,39 @@ jobs:
 
       - name: Installer les dépendances
         shell: pwsh
+        working-directory: ziggy
         run: |
           python -m pip install --upgrade pip
-          if (Test-Path "requirements.txt") {
-            pip install -r requirements.txt
+          if (Test-Path "requirements-build.txt") {
+            python -m pip install -r requirements-build.txt
+          } elseif (Test-Path "requirements.txt") {
+            python -m pip install -r requirements.txt
           }
-          pip install pyinstaller
+          python -m pip install pyinstaller
+
+      - name: Vérifier les fichiers
+        shell: pwsh
+        working-directory: ziggy
+        run: |
+          if (!(Test-Path "ziggy.spec") -and !(Test-Path "ziggy.py")) {
+            Write-Error "ziggy.spec et ziggy.py sont introuvables dans le dossier ziggy."
+            exit 1
+          }
 
       - name: Compiler Ziggy
         shell: pwsh
+        working-directory: ziggy
         run: |
           if (Test-Path "ziggy.spec") {
-            pyinstaller --noconfirm ziggy.spec
+            python -m PyInstaller --noconfirm ziggy.spec
           } elseif (Test-Path "ziggy.py") {
-            pyinstaller --noconfirm --onedir --name Ziggy ziggy.py
-          } else {
-            Write-Error "Impossible de trouver ziggy.spec ou ziggy.py à la racine."
-            exit 1
+            python -m PyInstaller --noconfirm --onedir --name Ziggy ziggy.py
           }
 
       - name: Publier le résultat
         uses: actions/upload-artifact@v4
         with:
           name: Ziggy-Windows
-          path: dist/
+          path: ziggy/dist/
           if-no-files-found: error
           retention-days: 7
