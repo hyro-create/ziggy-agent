@@ -1,0 +1,47 @@
+
+name: Compiler Ziggy pour Windows
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Récupérer le code
+        uses: actions/checkout@v4
+
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Installer les dépendances
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          if (Test-Path "requirements.txt") {
+            pip install -r requirements.txt
+          }
+          pip install pyinstaller
+
+      - name: Compiler Ziggy
+        shell: pwsh
+        run: |
+          if (Test-Path "ziggy.spec") {
+            pyinstaller --noconfirm ziggy.spec
+          } elseif (Test-Path "ziggy.py") {
+            pyinstaller --noconfirm --onedir --name Ziggy ziggy.py
+          } else {
+            Write-Error "Impossible de trouver ziggy.spec ou ziggy.py à la racine."
+            exit 1
+          }
+
+      - name: Publier le résultat
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ziggy-Windows
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
